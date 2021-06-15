@@ -1,0 +1,66 @@
+apply plugin: 'java'
+
+sourceCompatibility = '1.8'
+
+repositories {
+    mavenCentral()
+}
+
+project.ext {
+    cucumberVersion = '2.4.0'
+}
+
+project.version = '1.0.0'
+
+
+// Exclude cucumber tests below when running test, build tasks.
+test {
+    exclude '/test/'
+}
+
+// Cucumber tasks.
+configurations {
+    cucumber
+    cucumberRuntime {
+        extendsFrom testImplementation
+    }
+}
+
+ext.RunFeature = { String definition, String feature ->
+    javaexec {
+        main = "cucumber.api.cli.Main"
+        classpath = configurations.cucumberRuntime + sourceSets.main.output + sourceSets.test.output
+        args = ['--format', 'html:cucumber-html-report',
+                '--plugin', 'pretty',
+                '--glue',
+                definition,
+                feature,
+                '--tags', '@ui'
+        ]
+    }
+}
+
+// Configure your feature to run from here.
+project.tasks.create('cucumber') {
+    dependsOn assemble, compileTestJava
+
+    doLast {
+        //This line run tests
+        RunFeature('steps', 'src/test/resources')
+    }
+}
+
+dependencies {
+    compile group: 'info.cukes', name: 'cucumber-java', version: '1.2.5', ext: 'pom'
+    compile group: 'info.cukes', name: 'cucumber-core', version: '1.2.6', ext: 'pom'
+    compile group: 'info.cukes', name: 'cucumber-jvm-deps', version: '1.0.5', ext: 'pom'
+    compile group: 'info.cukes', name: 'gherkin', version: '2.12.2'
+
+    testImplementation 'io.cucumber:cucumber-java:'  + cucumberVersion
+    testImplementation 'io.cucumber:cucumber-junit:' + cucumberVersion
+
+    testCompile 'junit:junit:4.12'
+    testCompile 'com.codeborne:selenide:5.12.2'
+
+    cucumber 'info.cukes:cucumber-java:1.2.5'
+}
